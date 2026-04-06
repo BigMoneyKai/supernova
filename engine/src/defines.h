@@ -89,6 +89,32 @@ STATIC_ASSERT(sizeof(addr) == sizeof(void*), "Expected addr to match pointer siz
     #error "Unknown/Unsupported operating system."
 #endif
 
+// Ensure all platform macros are defined for compatibility.
+#ifndef SN_PLATFORM_WINDOWS
+    #define SN_PLATFORM_WINDOWS 0
+#endif
+#ifndef SN_PLATFORM_APPLE
+    #define SN_PLATFORM_APPLE 0
+#endif
+#ifndef SN_PLATFORM_IOS
+    #define SN_PLATFORM_IOS 0
+#endif
+#ifndef SN_PLATFORM_MAC
+    #define SN_PLATFORM_MAC 0
+#endif
+#ifndef SN_PLATFORM_LINUX
+    #define SN_PLATFORM_LINUX 0
+#endif
+#ifndef SN_PLATFORM_ANDROID
+    #define SN_PLATFORM_ANDROID 0
+#endif
+#ifndef SN_PLATFORM_UNIX
+    #define SN_PLATFORM_UNIX 0
+#endif
+#ifndef SN_PLATFORM_POSIX
+    #define SN_PLATFORM_POSIX 0
+#endif
+
 // .dll/.so
 #if defined(_MSC_VER)
     #if defined(SN_EXPORT)

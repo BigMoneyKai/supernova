@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include "platform/platform.h"
 
 typedef struct event_context {
     // Solid 16-byte data
@@ -37,13 +38,25 @@ typedef enum event_code {
     EVENT_CODE_MOUSE_MOVE = 0x06,
     EVENT_CODE_MOUSE_SCROLLED = 0x07,
 
+    // Window control
+    EVENT_CODE_WINDOW_RESIZED = 0x08,
 
     EVENT_CODE_MAX_NUM
 
 } event_code;
 
+// Backward-compat aliases for older code paths.
+#define EVENT_CODE_KEY_PRESS EVENT_CODE_KEY_PRESSED
+#define EVENT_CODE_KEY_RELEASE EVENT_CODE_KEY_RELEASED
+#define EVENT_CODE_BUTTON_PRESS EVENT_CODE_BUTTON_PRESSED
+#define EVENT_CODE_MOUSE_WHEEL EVENT_CODE_MOUSE_SCROLLED
+#define EVENT_CODE_MOUSE_MOVED EVENT_CODE_MOUSE_MOVE
+
 typedef b8 (*sys_event)(u16 code, void* sender, void* listener_inst, const event_context* data);
 
+SNAPI b8 event_init();
 SNAPI b8 event_register(u16 code, void* listener, sys_event event);
 SNAPI b8 event_unregister(u16 code, void* listener, sys_event event);
 SNAPI b8 event_fire(u16 code, void* sender, event_context context);
+
+SNAPI void print_event_msg();

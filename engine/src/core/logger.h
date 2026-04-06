@@ -19,7 +19,7 @@
 #define LIGHT_BLUE  "\033[94m"
 #define MAGENTA     "\033[35m"
 
-typedef enum log_level{
+typedef enum log_level {
     LOG_LEVEL_FATAL = 0,
     LOG_LEVEL_ERROR = 1,
     LOG_LEVEL_WARN  = 2,
@@ -27,6 +27,37 @@ typedef enum log_level{
     LOG_LEVEL_DEBUG = 4,
     LOG_LEVEL_TRACE = 5,
 } log_level;
+
+typedef enum log_process_type {
+    CORRECT = 0,
+
+    // container
+    OUT_OF_MEMORY,
+    MEMORY_EMPTY,
+    INVALID_CAPACITY,
+    MALLOC_FAILED,
+    NULL_PTR,
+    RESIZE_FAILED,
+    OUT_OF_INDEX_BOUNDS,
+    INVALID_INPUT,
+
+    // memory
+    MEMSYS_NULL,
+    DOUBLE_FREE,
+    OUT_OF_MEM_BOUNDS,
+    USE_AFTER_FREE,
+    MEM_LEAK,
+    DANGLING_PTR,
+    MISALIGNMENT,
+    UB,
+    STACK_OVERFLOW,
+
+    // general
+    NON_INIT,
+    DOUBLE_INIT,
+
+    EXCEPT_MAX_NUM
+} log_process_type;
 
 b8 init_logging();
 void quit_logging();

@@ -161,12 +161,13 @@ static u64 accounted_size_for_tag(memtag tag, u64 requested_size) {
     }
 }
 
-b8 snminit(u64 size, void* state) {
-    (void)size;
-
+log_process_type _snminit(void* state) {
     if(!state) {
-        FATAL("memory system state is null");
-        return SN_FALSE;
+        return MEMSYS_NULL;
+    }
+
+    if(mss) {
+        return DOUBLE_INIT;
     }
 
     mss = (memsys_state*)state;
@@ -174,19 +175,21 @@ b8 snminit(u64 size, void* state) {
     platform_zero_memory(mss->tagged_sizes, sizeof(mss->tagged_sizes));
 
     if(!init_allocators()) {
-        FATAL("failed to initialize memory allocators");
         destroy_allocators();
         mss = 0;
-        return SN_FALSE;
+        return OUT_OF_MEMORY;
     }
 
-    return SN_TRUE;
+    return CORRECT;
 }
 
-b8 snmquit(void* state) {
+log_process_type _snmquit(void* state) {
     if(!state) {
-        FATAL("memory system state is null");
-        return SN_FALSE;
+        return MEMSYS_NULL;
+    }
+
+    if(!mss) {
+        return NON_INIT;
     }
 
     mss = (memsys_state*)state;
@@ -194,25 +197,29 @@ b8 snmquit(void* state) {
     mss->total_size = 0;
     platform_zero_memory(mss->tagged_sizes, sizeof(mss->tagged_sizes));
     mss = 0;
-    return SN_TRUE;
+    return CORRECT;
 }
 
-void* snmalloc(u64 size, memtag tag) {
+log_process_type _snmalloc(void** out_block, u64 size, memtag tag) {
     void* block = 0;
     u64 accounted_size = 0;
 
+    if(!out_block) {
+        return NULL_PTR;
+    }
+
+    *out_block = 0;
+
     if(!mss) {
-        FATAL("memory system is not initialized");
-        return 0;
+        return NON_INIT;
     }
 
     if(size == 0) {
-        WARN("requested allocation size is 0");
-        return 0;
+        return INVALID_INPUT;
     }
 
-    if(tag == MEM_TAG_UNKNOWN) {
-        WARN("memory allocated with MEM_TAG_UNKNOWN");
+    if(tag >= TAG_MAX_NUM) {
+        return INVALID_INPUT;
     }
 
     switch(tag) {
@@ -268,27 +275,33 @@ void* snmalloc(u64 size, memtag tag) {
     }
 
     if(!block) {
-        FATAL("memory allocation failure, tag=%u, size=%llu", (u32)tag, size);
-        return 0;
+        return OUT_OF_MEMORY;
     }
 
     accounted_size = accounted_size_for_tag(tag, size);
     mss->total_size += accounted_size;
     mss->tagged_sizes[tag] += accounted_size;
-    return block;
+    *out_block = block;
+    return CORRECT;
 }
 
-void snmfree(void* block, u64 size, memtag tag) {
+log_process_type _snmfree(void* block, u64 size, memtag tag) {
     u64 accounted_size = 0;
 
     if(!mss) {
-        FATAL("memory system is not initialized");
-        return;
+        return NON_INIT;
     }
 
     if(!block) {
-        WARN("attempted to free null block");
-        return;
+        return NULL_PTR;
+    }
+
+    if(size == 0) {
+        return INVALID_INPUT;
+    }
+
+    if(tag >= TAG_MAX_NUM) {
+        return INVALID_INPUT;
     }
 
     accounted_size = accounted_size_for_tag(tag, size);
@@ -317,11 +330,9 @@ void snmfree(void* block, u64 size, memtag tag) {
             break;
         case MEM_TAG_STRING:
         case MEM_TAG_JOB:
-            WARN("tag '%s' does not support individual free", tag < TAG_MAX_NUM ? tag_strs[tag] : "invalid");
-            return;
+            return INVALID_INPUT;
         case MEM_TAG_ENGINE:
-            WARN("tag '%s' does not support individual free", tag < TAG_MAX_NUM ? tag_strs[tag] : "invalid");
-            return;
+            return INVALID_INPUT;
         case MEM_TAG_GAME:
             general_free(&game_general, block, size);
             break;
@@ -339,8 +350,7 @@ void snmfree(void* block, u64 size, memtag tag) {
             break;
         case MEM_TAG_UNKNOWN:
         default:
-            WARN("tag '%s' does not support individual free", tag < TAG_MAX_NUM ? tag_strs[tag] : "invalid");
-            return;
+            return INVALID_INPUT;
     }
 
     if(mss->total_size >= accounted_size) {
@@ -356,96 +366,133 @@ void snmfree(void* block, u64 size, memtag tag) {
             mss->tagged_sizes[tag] = 0;
         }
     }
+
+    return CORRECT;
 }
 
-void snmcopy(void* dest, const void* src, u64 size) {
+log_process_type _snmcopy(void* dest, const void* src, u64 size) {
     if(!dest || !src) {
-        WARN("snmcopy received null pointer");
-        return;
+        return NULL_PTR;
     }
 
     platform_copy_memory(dest, src, size);
+    return CORRECT;
 }
 
-void snmmove(void* dest, const void* src, u64 size) {
+log_process_type _snmmove(void* dest, const void* src, u64 size) {
     if(!dest || !src) {
-        WARN("snmmove received null pointer");
-        return;
+        return NULL_PTR;
     }
 
     platform_move_memory(dest, src, size);
+    return CORRECT;
 }
 
-void snmset(void* block, i32 value, u64 size) {
+log_process_type _snmset(void* block, i32 value, u64 size) {
     if(!block) {
-        WARN("snmset received null block");
-        return;
+        return NULL_PTR;
     }
 
     platform_set_memory(block, value, size);
+    return CORRECT;
 }
 
-void snmzero(void* block, u64 size) {
+log_process_type _snmzero(void* block, u64 size) {
     if(!block) {
-        WARN("snmzero received null block");
-        return;
+        return NULL_PTR;
     }
 
     platform_zero_memory(block, size);
+    return CORRECT;
 }
 
-u64 snm_string_mark(void) {
-    return stack_mark(&string_stack);
+log_process_type _snm_string_mark(u64* out_mark) {
+    if(!out_mark) {
+        return NULL_PTR;
+    }
+    if(!mss) {
+        return NON_INIT;
+    }
+
+    *out_mark = stack_mark(&string_stack);
+    return CORRECT;
 }
 
-void snm_string_reset_to_mark(u64 mark) {
+log_process_type _snm_string_reset_to_mark(u64 mark) {
+    if(!mss) {
+        return NON_INIT;
+    }
+
     release_stack_usage(&string_stack, mark);
     stack_reset_to_mark(&string_stack, mark);
+    return CORRECT;
 }
 
-void snm_string_reset(void) {
+log_process_type _snm_string_reset(void) {
+    if(!mss) {
+        return NON_INIT;
+    }
+
     release_stack_usage(&string_stack, 0);
     stack_reset(&string_stack);
+    return CORRECT;
 }
 
-u64 snm_job_mark(void) {
-    return stack_mark(&job_stack);
+log_process_type _snm_job_mark(u64* out_mark) {
+    if(!out_mark) {
+        return NULL_PTR;
+    }
+    if(!mss) {
+        return NON_INIT;
+    }
+
+    *out_mark = stack_mark(&job_stack);
+    return CORRECT;
 }
 
-void snm_job_reset_to_mark(u64 mark) {
+log_process_type _snm_job_reset_to_mark(u64 mark) {
+    if(!mss) {
+        return NON_INIT;
+    }
+
     release_stack_usage(&job_stack, mark);
     stack_reset_to_mark(&job_stack, mark);
+    return CORRECT;
 }
 
-void snm_job_reset(void) {
+log_process_type _snm_job_reset(void) {
+    if(!mss) {
+        return NON_INIT;
+    }
+
     release_stack_usage(&job_stack, 0);
     stack_reset(&job_stack);
+    return CORRECT;
 }
 
-void get_meminfo(memtag tag, char* buffer, u64 bufsize) {
+log_process_type _get_meminfo(memtag tag, char* buffer, u64 bufsize) {
     if(!mss) {
-        FATAL("memory system is not initialized");
-        return;
+        return NON_INIT;
     }
 
     if(!buffer || bufsize == 0) {
-        return;
+        return NULL_PTR;
     }
 
     if(tag >= TAG_MAX_NUM) {
         snprintf(buffer, bufsize, "invalid tag");
-        return;
+        return INVALID_INPUT;
     }
 
     fmt_size(mss->tagged_sizes[tag], buffer, bufsize);
+    return CORRECT;
 }
 
-void print_mstats(void) {
+log_process_type _update_mstats_tui(void) {
     char buf[256];
 
     if(!mss) {
-        FATAL("memory system is not initialized");
-        return;
+        return NON_INIT;
     }
 
     fmt_size(mss->total_size, buf, sizeof(buf));
@@ -455,4 +502,6 @@ void print_mstats(void) {
         fmt_size(mss->tagged_sizes[tag], buf, sizeof(buf));
         INFO("%s: %s", tag_strs[tag], buf);
     }
+
+    return CORRECT;
 }

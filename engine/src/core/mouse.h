@@ -8,4 +8,5 @@ typedef enum mouse_code {
     MOUSE_CODE_SCROLL_UP,
     MOUSE_CODE_SCROLL_DOWN,
 
+    MOUSE_CODE_MAX_NUM
 } mouse_code;

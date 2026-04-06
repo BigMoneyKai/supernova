@@ -4,41 +4,39 @@
 
 #include <stddef.h>
 
-void _darray_create(darray* arr, u64 capacity, u64 stride) {
+log_process_type _darray_create(darray* arr, u64 capacity, u64 stride) {
     if(!arr) {
-        FATAL("array is null");
-        return;
+        return NULL_PTR;
     }
     if(capacity == 0) {
-        FATAL("invalid capacity");
-        return;
+        return INVALID_CAPACITY;
     }
     arr->capacity = capacity;
     arr->length = 0;
     arr->stride = stride;
     arr->data = snmalloc(capacity * stride, MEM_TAG_DARRAY);
     if(!arr->data) {
-        FATAL("memory allocation failed");
-        return;
+        return MALLOC_FAILED;
     }
+    return CORRECT;
 }
 
-void _darray_destroy(darray* arr) {
+log_process_type _darray_destroy(darray* arr) {
     if(!arr) {
-        FATAL("array is null");
-        return;
+        return NULL_PTR;
     }
     snmfree(arr->data, arr->capacity * arr->stride, MEM_TAG_DARRAY);
     arr->data = NULL;
     arr->capacity = 0;
     arr->length = 0;
     arr->stride = 0;
+    return CORRECT;
 }
 
-darray* _darray_resize(darray* arr) {
+log_process_type _darray_resize(darray* arr) {
     if (!arr) {
-        FATAL("array is null");
-        return arr;
+        return NULL_PTR;
+
     }
 
     u64 old_size = arr->capacity * arr->stride;
@@ -47,8 +45,7 @@ darray* _darray_resize(darray* arr) {
 
     void* new_mem = snmalloc(new_size, MEM_TAG_DARRAY);
     if (!new_mem) {
-        FATAL("resize failed");
-        return arr;
+        return MALLOC_FAILED;
     }
 
     snmcopy(new_mem, arr->data, arr->capacity * arr->stride);
@@ -58,49 +55,39 @@ darray* _darray_resize(darray* arr) {
     arr->data = new_mem;
     arr->capacity = new_capacity;
 
-    return arr;
+    return CORRECT;
 }
 
-darray* _darray_push(darray* arr, const void* v_ptr) {
+log_process_type _darray_push(darray* arr, const void* v_ptr) {
     if(!arr || !v_ptr) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
     if(arr->length == arr->capacity) {
-        arr = _darray_resize(arr);
-        if(!arr) {
-            FATAL("array is null");
-            return NULL;
+        log_process_type res = _darray_resize(arr);
+        if(res != CORRECT) {
+            return res;
         }
     }
     u8* dest = (u8*)arr->data + arr->length * arr->stride;
     snmcopy(dest, v_ptr, arr->stride);
     arr->length++;
 
-#if defined(SN_DEBUG)
-    if(arr->length == arr->capacity) {
-        DEBUG("array is full, please use 'darray_resize' to resize it");
-    }
-#endif
-    return arr;
+    return CORRECT;
 }
 
-darray* _darray_insert(darray* arr, u64 idx, const void* v_ptr) {
+log_process_type _darray_insert(darray* arr, u64 idx, const void* v_ptr) {
     if(!arr || !v_ptr) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
 
     if(idx > arr->length) {
-        FATAL("index out of bounds");
-        return arr;
+        return OUT_OF_INDEX_BOUNDS;
     }
 
     if(arr->length == arr->capacity) {
-        arr = _darray_resize(arr);
-        if(!arr) {
-            FATAL("array is null");
-            return NULL;
+        log_process_type res = _darray_resize(arr);
+        if(res != CORRECT) {
+            return res;
         }
     }
 
@@ -109,21 +96,16 @@ darray* _darray_insert(darray* arr, u64 idx, const void* v_ptr) {
     snmmove(base + (idx + 1) * arr->stride,
         base + idx * arr->stride,
         arr->stride * (arr->length - idx));
+
     snmcopy(base + idx * arr->stride, v_ptr, arr->stride);
     arr->length++;
 
-#if defined(SN_DEBUG)
-    if(arr->length == arr->capacity) {
-        DEBUG("array is full, please use 'darray_resize' to resize it");
-    }
-#endif
-    return arr;
+    return CORRECT;
 }
 
-darray* _darray_pop(darray* arr, void* dest) {
+log_process_type _darray_pop(darray* arr, void* dest) {
     if (!arr || arr->length == 0) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
     arr->length--;
     u8* src = (u8*)arr->data + arr->length * arr->stride;
@@ -132,24 +114,17 @@ darray* _darray_pop(darray* arr, void* dest) {
         snmcopy(dest, src, arr->stride);
     }
 
-#if defined(SN_DEBUG)
-    if(arr->length == 0) {
-        DEBUG("array is empty");
-    }
-#endif
-    return arr;
+    return CORRECT;
 
 }
 
-darray* _darray_pop_at(darray* arr, u64 idx, void* dest) {
+log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest) {
     if(!arr || !arr->data) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
 
     if(idx >= arr->length) {
-        FATAL("index out of bounds");
-        return arr;
+        return OUT_OF_INDEX_BOUNDS;
     }
 
     u8* base = (u8*)arr->data;
@@ -164,10 +139,5 @@ darray* _darray_pop_at(darray* arr, u64 idx, void* dest) {
         (arr->length - idx - 1) * arr->stride);
     arr->length--;
 
-#if defined(SN_DEBUG)
-    if(arr->length == 0) {
-        DEBUG("array is empty");
-    }
-#endif
-    return arr;
+    return CORRECT;
 }

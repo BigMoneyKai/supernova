@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include "core/logger.h"
 
 typedef struct stack_allocator stack_allocator;
 typedef struct pool_allocator pool_allocator;
@@ -89,20 +90,308 @@ extern general_allocator entity_general;
 extern general_allocator entity_node_general;
 extern general_allocator scene_general;
 
-SNAPI b8 snminit(u64 size, void* state);
-SNAPI b8 snmquit(void* state);
-SNAPI void* snmalloc(u64 size, memtag tag);
-SNAPI void snmfree(void* block, u64 size, memtag tag);
-SNAPI void snmcopy(void* dest, const void* src, u64 size);
-SNAPI void snmmove(void* dest, const void* src, u64 size);
-SNAPI void snmset(void* block, i32 value, u64 size);
-SNAPI void snmzero(void* block, u64 size);
-SNAPI u64 snm_string_mark(void);
-SNAPI void snm_string_reset_to_mark(u64 mark);
-SNAPI void snm_string_reset(void);
-SNAPI u64 snm_job_mark(void);
-SNAPI void snm_job_reset_to_mark(u64 mark);
-SNAPI void snm_job_reset(void);
+SNAPI log_process_type _snminit(void* state);
+SNAPI log_process_type _snmquit(void* state);
+SNAPI log_process_type _snmalloc(void** out_block, u64 size, memtag tag);
+SNAPI log_process_type _snmfree(void* block, u64 size, memtag tag);
+SNAPI log_process_type _snmcopy(void* dest, const void* src, u64 size);
+SNAPI log_process_type _snmmove(void* dest, const void* src, u64 size);
+SNAPI log_process_type _snmset(void* block, i32 value, u64 size);
+SNAPI log_process_type _snmzero(void* block, u64 size);
+SNAPI log_process_type _snm_string_mark(u64* out_mark);
+SNAPI log_process_type _snm_string_reset_to_mark(u64 mark);
+SNAPI log_process_type _snm_string_reset(void);
+SNAPI log_process_type _snm_job_mark(u64* out_mark);
+SNAPI log_process_type _snm_job_reset_to_mark(u64 mark);
+SNAPI log_process_type _snm_job_reset(void);
 
-SNAPI void get_meminfo(memtag tag, char* buffer, u64 bufsize);
-SNAPI void print_mstats(void);
+SNAPI log_process_type _get_meminfo(memtag tag, char* buffer, u64 bufsize);
+SNAPI log_process_type _update_mstats_tui(void);
+
+#define snminit(state) \
+    do { \
+        log_process_type _snm_res = _snminit((state)); \
+        switch(_snm_res) { \
+            case MEMSYS_NULL: { \
+                FATAL("memory system state is null"); \
+            } break; \
+            case DOUBLE_INIT: { \
+                WARN("memory system already initialized"); \
+            } break; \
+            case OUT_OF_MEMORY: { \
+                FATAL("failed to initialize memory allocators"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("memory system initialized"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snmquit(state) \
+    do { \
+        log_process_type _snm_res = _snmquit((state)); \
+        switch(_snm_res) { \
+            case MEMSYS_NULL: { \
+                FATAL("memory system state is null"); \
+            } break; \
+            case NON_INIT: { \
+                WARN("memory system is not initialized"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("memory system shutdown"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snmalloc(size, tag) \
+    ({ \
+        void* _snm_ptr = 0; \
+        u64 _snm_size = (size); \
+        memtag _snm_tag = (tag); \
+        log_process_type _snm_res = _snmalloc(&_snm_ptr, _snm_size, _snm_tag); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case NULL_PTR: { \
+                FATAL("invalid output pointer for allocation"); \
+            } break; \
+            case INVALID_INPUT: { \
+                if(_snm_size == 0) { \
+                    FATAL("requested allocation size is 0"); \
+                } else if(_snm_tag >= TAG_MAX_NUM) { \
+                    FATAL("invalid memory tag"); \
+                } else { \
+                    FATAL("invalid allocation input"); \
+                } \
+            } break; \
+            case OUT_OF_MEMORY: { \
+                FATAL("memory allocation failure, tag=%u, size=%llu", (u32)_snm_tag, _snm_size); \
+            } break; \
+            case CORRECT: { \
+                TRACE("memory allocated, tag=%u, size=%llu", (u32)_snm_tag, _snm_size); \
+            } break; \
+            default: break; \
+        } \
+        if(_snm_tag == MEM_TAG_UNKNOWN) { \
+            WARN("memory allocated with MEM_TAG_UNKNOWN"); \
+        } \
+        _snm_ptr; \
+    })
+
+#define snmfree(block, size, tag) \
+    do { \
+        void* _snm_block = (block); \
+        u64 _snm_size = (size); \
+        memtag _snm_tag = (tag); \
+        log_process_type _snm_res = _snmfree(_snm_block, _snm_size, _snm_tag); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case NULL_PTR: { \
+                WARN("attempted to free null block"); \
+            } break; \
+            case INVALID_INPUT: { \
+                if(_snm_tag == MEM_TAG_STRING || _snm_tag == MEM_TAG_JOB || _snm_tag == MEM_TAG_ENGINE || _snm_tag == MEM_TAG_UNKNOWN) { \
+                    WARN("tag does not support individual free"); \
+                } else if(_snm_tag >= TAG_MAX_NUM) { \
+                    WARN("invalid memory tag"); \
+                } else if(_snm_size == 0) { \
+                    WARN("invalid free size"); \
+                } else { \
+                    WARN("invalid memory free request"); \
+                } \
+            } break; \
+            case CORRECT: { \
+                TRACE("memory freed, tag=%u, size=%llu", (u32)_snm_tag, _snm_size); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snmcopy(dest, src, size) \
+    do { \
+        log_process_type _snm_res = _snmcopy((dest), (src), (size)); \
+        switch(_snm_res) { \
+            case NULL_PTR: { \
+                WARN("snmcopy received null pointer"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("snmcopy completed"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snmmove(dest, src, size) \
+    do { \
+        log_process_type _snm_res = _snmmove((dest), (src), (size)); \
+        switch(_snm_res) { \
+            case NULL_PTR: { \
+                WARN("snmmove received null pointer"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("snmmove completed"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snmset(block, value, size) \
+    do { \
+        log_process_type _snm_res = _snmset((block), (value), (size)); \
+        switch(_snm_res) { \
+            case NULL_PTR: { \
+                WARN("snmset received null block"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("snmset completed"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snmzero(block, size) \
+    do { \
+        log_process_type _snm_res = _snmzero((block), (size)); \
+        switch(_snm_res) { \
+            case NULL_PTR: { \
+                WARN("snmzero received null block"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("snmzero completed"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snm_string_mark() \
+    ({ \
+        u64 _snm_mark = 0; \
+        log_process_type _snm_res = _snm_string_mark(&_snm_mark); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case NULL_PTR: { \
+                FATAL("invalid output pointer for string mark"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("string stack mark"); \
+            } break; \
+            default: break; \
+        } \
+        _snm_mark; \
+    })
+
+#define snm_string_reset_to_mark(mark) \
+    do { \
+        log_process_type _snm_res = _snm_string_reset_to_mark((mark)); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("string stack reset to mark"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snm_string_reset() \
+    do { \
+        log_process_type _snm_res = _snm_string_reset(); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("string stack reset"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snm_job_mark() \
+    ({ \
+        u64 _snm_mark = 0; \
+        log_process_type _snm_res = _snm_job_mark(&_snm_mark); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case NULL_PTR: { \
+                FATAL("invalid output pointer for job mark"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("job stack mark"); \
+            } break; \
+            default: break; \
+        } \
+        _snm_mark; \
+    })
+
+#define snm_job_reset_to_mark(mark) \
+    do { \
+        log_process_type _snm_res = _snm_job_reset_to_mark((mark)); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("job stack reset to mark"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define snm_job_reset() \
+    do { \
+        log_process_type _snm_res = _snm_job_reset(); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("job stack reset"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define get_meminfo(tag, buffer, bufsize) \
+    do { \
+        log_process_type _snm_res = _get_meminfo((tag), (buffer), (bufsize)); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case NULL_PTR: { \
+                WARN("invalid memory info buffer"); \
+            } break; \
+            case INVALID_INPUT: { \
+                WARN("invalid memory tag"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("memory info fetched"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)
+
+#define update_mstats_tui() \
+    do { \
+        log_process_type _snm_res = _update_mstats_tui(); \
+        switch(_snm_res) { \
+            case NON_INIT: { \
+                FATAL("memory system is not initialized"); \
+            } break; \
+            case CORRECT: { \
+                TRACE("memory stats updated"); \
+            } break; \
+            default: break; \
+        } \
+    } while(0)

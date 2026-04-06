@@ -4,72 +4,60 @@
 
 #include <stddef.h>
 
-void _array_create(array* arr, u64 capacity, u64 stride) {
+log_process_type _array_create(array* arr, u64 capacity, u64 stride) {
     if(!arr) {
-        FATAL("array is null");
-        return;
+        return NULL_PTR;
     }
     if(capacity == 0) {
-        FATAL("invalid capacity");
-        return;
+        return INVALID_CAPACITY;
     }
     arr->capacity = capacity;
     arr->length = 0;
     arr->stride = stride;
     arr->data = snmalloc(capacity * stride, MEM_TAG_ARRAY);
     if(!arr->data) {
-        FATAL("memory allocation failed");
-        return;
+        return MALLOC_FAILED;
     }
+    return CORRECT;
 }
 
-void _array_destroy(array* arr) {
+log_process_type _array_destroy(array* arr) {
     if(!arr) {
-        FATAL("array is null");
-        return;
+        return NULL_PTR;
     }
     snmfree(arr->data, arr->capacity * arr->stride, MEM_TAG_ARRAY);
     arr->data = NULL;
     arr->capacity = 0;
     arr->length = 0;
     arr->stride = 0;
+    return CORRECT;
 }
 
-array* _array_push(array* arr, const void* v_ptr) {
+log_process_type _array_push(array* arr, const void* v_ptr) {
     if(!arr || !v_ptr) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
     if(arr->length == arr->capacity) {
-        FATAL("array is full");
-        return arr;
+        return OUT_OF_MEMORY;
     }
     u8* dest = (u8*)arr->data + arr->length * arr->stride;
     snmcopy(dest, v_ptr, arr->stride);
     arr->length++;
 
-#if defined(SN_DEBUG)
-    if(arr->length == arr->capacity) {
-        DEBUG("array is full");
-    }
-#endif
-    return arr;
+    return CORRECT;
 }
 
-array* _array_insert(array* arr, u64 idx, const void* v_ptr) {
+log_process_type _array_insert(array* arr, u64 idx, const void* v_ptr) {
     if(!arr || !v_ptr) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
 
     if(idx > arr->length) {
-        FATAL("index out of bounds");
-        return arr;
+        return OUT_OF_INDEX_BOUNDS;
     }
 
     if(arr->length == arr->capacity) {
-        FATAL("array is full");
-        return arr;
+        return OUT_OF_MEMORY;
     }
 
     u8* base = (u8*)arr->data;
@@ -80,19 +68,16 @@ array* _array_insert(array* arr, u64 idx, const void* v_ptr) {
     snmcopy(base + idx * arr->stride, v_ptr, arr->stride);
     arr->length++;
 
-#if defined(SN_DEBUG)
-    if(arr->length == arr->capacity) {
-        DEBUG("array is full");
-    }
-#endif
-    return arr;
+    return CORRECT;
 }
 
-array* _array_pop(array* arr, void* dest) {
-    if (!arr || arr->length == 0) {
-        FATAL("invalid input");
-        return arr;
+log_process_type _array_pop(array* arr, void* dest) {
+    if (!arr || !arr->data) {
+        return NULL_PTR; 
     }
+    if(arr->length == 0) {
+        return MEMORY_EMPTY;
+    }   
     arr->length--;
     u8* src = (u8*)arr->data + arr->length * arr->stride;
 
@@ -100,24 +85,21 @@ array* _array_pop(array* arr, void* dest) {
         snmcopy(dest, src, arr->stride);
     }
 
-#if defined(SN_DEBUG)
-    if(arr->length == 0) {
-        DEBUG("array is empty");
-    }
-#endif
-    return arr;
+    return CORRECT;
 
 }
 
-array* _array_pop_at(array* arr, u64 idx, void* dest) {
+log_process_type _array_pop_at(array* arr, u64 idx, void* dest) {
     if(!arr || !arr->data) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
+    }
+
+    if(arr->length == 0) {
+        return MEMORY_EMPTY;
     }
 
     if(idx >= arr->length) {
-        FATAL("index out of bounds");
-        return arr;
+        return OUT_OF_INDEX_BOUNDS;
     }
 
     u8* base = (u8*)arr->data;
@@ -132,10 +114,5 @@ array* _array_pop_at(array* arr, u64 idx, void* dest) {
         (arr->length - idx - 1) * arr->stride);
     arr->length--;
 
-#if defined(SN_DEBUG)
-    if(arr->length == 0) {
-        DEBUG("array is empty");
-    }
-#endif
-    return arr;
+    return CORRECT;
 }

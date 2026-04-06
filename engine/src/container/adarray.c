@@ -4,41 +4,38 @@
 
 #include <stddef.h>
 
-void _adarray_create(adarray* arr, u64 capacity, u64 stride) {
+log_process_type _adarray_create(adarray* arr, u64 capacity, u64 stride) {
     if(!arr) {
-        FATAL("array is null");
-        return;
+        return NULL_PTR;
     }
     if(capacity == 0) {
-        FATAL("invalid capacity");
-        return;
+        return INVALID_CAPACITY;
     }
     arr->capacity = capacity;
     arr->length = 0;
     arr->stride = stride;
     arr->data = snmalloc(capacity * stride, MEM_TAG_DARRAY);
     if(!arr->data) {
-        FATAL("memory allocation failed");
-        return;
+        return MALLOC_FAILED;
     }
+    return CORRECT;
 }
 
-void _adarray_destroy(adarray* arr) {
+log_process_type _adarray_destroy(adarray* arr) {
     if(!arr) {
-        FATAL("array is null");
-        return;
+        return NULL_PTR;
     }
     snmfree(arr->data, arr->capacity * arr->stride, MEM_TAG_DARRAY);
     arr->data = NULL;
     arr->capacity = 0;
     arr->length = 0;
     arr->stride = 0;
+    return CORRECT;
 }
 
-adarray* _adarray_resize(adarray* arr) {
+log_process_type _adarray_resize(adarray* arr) {
     if (!arr) {
-        FATAL("array is null");
-        return arr;
+        return NULL_PTR;
     }
 
     u64 old_size = arr->capacity * arr->stride;
@@ -47,8 +44,7 @@ adarray* _adarray_resize(adarray* arr) {
 
     void* new_mem = snmalloc(new_size, MEM_TAG_DARRAY);
     if (!new_mem) {
-        FATAL("resize failed");
-        return arr;
+        return MALLOC_FAILED;
     }
 
     snmcopy(new_mem, arr->data, arr->capacity * arr->stride);
@@ -58,45 +54,34 @@ adarray* _adarray_resize(adarray* arr) {
     arr->data = new_mem;
     arr->capacity = new_capacity;
 
-    return arr;
+    return CORRECT;
 }
 
-adarray* _adarray_push(adarray* arr, const void* v_ptr) {
+log_process_type _adarray_push(adarray* arr, const void* v_ptr) {
     if(!arr || !v_ptr) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
     if(arr->length == arr->capacity) {
-        FATAL("array is full, please use 'adarray_resize' to resize it");
-        return arr;
+        return OUT_OF_MEMORY;
     }
     u8* dest = (u8*)arr->data + arr->length * arr->stride;
     snmcopy(dest, v_ptr, arr->stride);
     arr->length++;
 
-#if defined(SN_DEBUG)
-    if(arr->length == arr->capacity) {
-        DEBUG("array is full, please use 'adarray_resize' to resize it");
-        return arr;
-    }
-#endif
-    return arr;
+    return CORRECT;
 }
 
-adarray* _adarray_insert(adarray* arr, u64 idx, const void* v_ptr) {
+log_process_type _adarray_insert(adarray* arr, u64 idx, const void* v_ptr) {
     if(!arr || !v_ptr) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
 
     if(arr->length == arr->capacity) {
-        FATAL("array is full, please use 'adarray_resize' to resize it");
-        return arr;
+        return OUT_OF_MEMORY;
     }
 
     if(idx > arr->length) {
-        FATAL("index out of bounds");
-        return arr;
+        return OUT_OF_INDEX_BOUNDS;
     }
 
     u8* base = (u8*)arr->data;
@@ -107,19 +92,12 @@ adarray* _adarray_insert(adarray* arr, u64 idx, const void* v_ptr) {
     snmcopy(base + idx * arr->stride, v_ptr, arr->stride);
     arr->length++;
 
-#if defined(SN_DEBUG)
-    if(arr->length == arr->capacity) {
-        WARN("array is full, please use 'adarray_resize' to resize it");
-        return arr;
-    }
-#endif
-    return arr;
+    return CORRECT;
 }
 
-adarray* _adarray_pop(adarray* arr, void* dest) {
+log_process_type _adarray_pop(adarray* arr, void* dest) {
     if (!arr || arr->length == 0) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
     arr->length--;
     u8* src = (u8*)arr->data + arr->length * arr->stride;
@@ -128,25 +106,17 @@ adarray* _adarray_pop(adarray* arr, void* dest) {
         snmcopy(dest, src, arr->stride);
     }
 
-#if defined(SN_DEBUG)
-    if(arr->length == 0) {
-        DEBUG("array is empty");
-        return arr;
-    }
-#endif
-    return arr;
+    return CORRECT;
 
 }
 
-adarray* _adarray_pop_at(adarray* arr, u64 idx, void* dest) {
+log_process_type _adarray_pop_at(adarray* arr, u64 idx, void* dest) {
     if(!arr || !arr->data) {
-        FATAL("invalid input");
-        return arr;
+        return NULL_PTR;
     }
 
     if(idx >= arr->length) {
-        FATAL("index out of bounds");
-        return arr;
+        return OUT_OF_INDEX_BOUNDS;
     }
 
     u8* base = (u8*)arr->data;
@@ -161,11 +131,5 @@ adarray* _adarray_pop_at(adarray* arr, u64 idx, void* dest) {
         (arr->length - idx - 1) * arr->stride);
     arr->length--;
 
-#if defined(SN_DEBUG)
-    if(arr->length == 0) {
-        DEBUG("array is empty");
-        return arr;
-    }
-#endif
-    return arr;
+    return CORRECT;
 }

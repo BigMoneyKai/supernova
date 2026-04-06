@@ -51,6 +51,33 @@ typedef enum key_code {
     KEY_CODE_LCTRL,
     KEY_CODE_RCTRL,
 
+    // Letters (lowercase)
+    KEY_CODE_a,
+    KEY_CODE_b,
+    KEY_CODE_c,
+    KEY_CODE_d,
+    KEY_CODE_e,
+    KEY_CODE_f,
+    KEY_CODE_g,
+    KEY_CODE_h,
+    KEY_CODE_i,
+    KEY_CODE_j,
+    KEY_CODE_k,
+    KEY_CODE_l,
+    KEY_CODE_m,
+    KEY_CODE_n,
+    KEY_CODE_o,
+    KEY_CODE_p,
+    KEY_CODE_q,
+    KEY_CODE_r,
+    KEY_CODE_s,
+    KEY_CODE_t,
+    KEY_CODE_u,
+    KEY_CODE_v,
+    KEY_CODE_w,
+    KEY_CODE_x,
+    KEY_CODE_y,
+    KEY_CODE_z,
 
     KEY_CODE_MAX_NUM
 } key_code;

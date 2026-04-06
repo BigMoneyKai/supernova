@@ -1,6 +1,7 @@
-#include "allocator.h"
-#include "logger.h"
 #include "platform/platform.h"
+#include "core/allocator.h"
+#include "core/logger.h"
+#include "core/memory.h"
 
 #include <stddef.h>
 

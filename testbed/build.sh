@@ -9,7 +9,7 @@ mkdir -p ../bin
 cFilenames=$(find . -type f -name "*.c")
 
 assembly="testbed"
-compilerFlags="-g -fdeclspec -fPIC -fsanitize=address,leak"
+compilerFlags="-g -fdeclspec -fPIC "
 
 includeFlags="-Isrc -I../engine/src"
 linkerFlags="-L../bin/ -lengine -Wl,-rpath,\$ORIGIN"

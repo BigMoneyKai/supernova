@@ -1,8 +1,30 @@
 #pragma once
 
 #include "defines.h"
+#include "core/keyboard.h"
+#include "core/mouse.h"
 
 #define ALIGNMENT 16
+
+typedef enum sn_button {
+    BUTTON_UNKNOWN = 0,
+    BUTTON_LEFT,
+    BUTTON_RIGHT,
+    BUTTON_MIDDLE,
+    BUTTON_SCROLL_UP,
+    BUTTON_SCROLL_DOWN,
+    BUTTON_MAX
+} sn_button;
+
+typedef struct platform_event_callbacks {
+    void (*on_quit)    (void* user);
+    void (*on_key)     (key_code key,    b8 pressed,  void* user);
+    void (*on_button)  (mouse_code btn,  b8 pressed,  void* user);
+    void (*on_mouse)   (i16 x, i16 y,                 void* user);
+    void (*on_scroll)  (i8 delta,                     void* user);
+    void (*on_resize)  (u16 w, u16 h,                 void* user);
+    void* user_data;
+} platform_event_callbacks;
 
 typedef struct platform_state {
     void* internal_state;
@@ -16,9 +38,7 @@ b8 platform_startup(
     i32 width,
     i32 height
 );
-
 void platform_shutdown(platform_state* plat_state);
-
 b8 platform_pump_messages(platform_state* plat_state);
 
 void* platform_allocate(u64 size);
@@ -34,3 +54,5 @@ void platform_console_write_error(const char* msg, u8 color);
 
 f64 platform_get_absolute_time();
 void platform_sleep(u64 ms);
+
+void platform_set_event_callbacks(platform_state* plat_state, const platform_event_callbacks* callbacks);
