@@ -79,5 +79,7 @@ typedef enum key_code {
     KEY_CODE_y,
     KEY_CODE_z,
 
+    KEY_CODE_UNKNOWN,
+
     KEY_CODE_MAX_NUM
 } key_code;

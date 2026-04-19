@@ -7,24 +7,24 @@
 
 memsys_state* mss = 0;
 
-stack_allocator job_stack = {0};
-stack_allocator string_stack = {0};
-pool_allocator array_pool32 = {0};
-pool_allocator darray_pool32 = {0};
-pool_allocator ring_buffer_pool32 = {0};
-linear_allocator engine_linear = {0};
-general_allocator array_general = {0};
-general_allocator darray_general = {0};
-general_allocator ring_buffer_general = {0};
-general_allocator bst_general = {0};
-general_allocator texture_general = {0};
-general_allocator material_instance_general = {0};
-general_allocator renderer_general = {0};
-general_allocator game_general = {0};
-general_allocator transform_general = {0};
-general_allocator entity_general = {0};
-general_allocator entity_node_general = {0};
-general_allocator scene_general = {0};
+stack_allocator job_stack{};
+stack_allocator string_stack{};
+pool_allocator array_pool32{};
+pool_allocator darray_pool32{};
+pool_allocator ring_buffer_pool32{}; 
+linear_allocator engine_linear{};
+general_allocator array_general{};
+general_allocator darray_general{};
+general_allocator ring_buffer_general{};
+general_allocator bst_general{};
+general_allocator texture_general{};
+general_allocator material_instance_general{};
+general_allocator renderer_general{};
+general_allocator game_general{};
+general_allocator transform_general{};
+general_allocator entity_general{};
+general_allocator entity_node_general{};
+general_allocator scene_general{};
 
 static const char* tag_strs[TAG_MAX_NUM] = {
     "unknown",

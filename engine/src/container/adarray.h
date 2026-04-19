@@ -80,7 +80,7 @@ SNAPI log_process_type _adarray_pop_at(adarray* arr, u64 idx, void* dest);
 
 #define adarray_push(darr, val)\
     do {\
-        typeof(val) temp = val;\
+        auto temp = val;\
         log_process_type res = _adarray_push((darr), (&temp));\
         switch(res) {\
             case NULL_PTR:\
@@ -97,7 +97,7 @@ SNAPI log_process_type _adarray_pop_at(adarray* arr, u64 idx, void* dest);
 
 #define adarray_insert(darr, idx, val)\
     do {\
-        typeof(val) temp = val;\
+        auto temp = val;\
         log_process_type res = _adarray_insert((darr), (idx), (&temp));\
         switch(res) {\
             case NULL_PTR:\

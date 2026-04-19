@@ -52,7 +52,7 @@ void platform_set_memory(void* dest, i32 value, u64 size);
 void platform_console_write(const char* msg, u8 color);
 void platform_console_write_error(const char* msg, u8 color);
 
-f64 platform_get_absolute_time();
+f64 platform_get_absolute_time(void);
 void platform_sleep(u64 ms);
 
 void platform_set_event_callbacks(platform_state* plat_state, const platform_event_callbacks* callbacks);

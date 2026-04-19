@@ -4,8 +4,8 @@
 #include "keyboard.h"
 #include "mouse.h"
 
-b8 input_init();
-void input_shutdown();
+b8 input_init(void);
+void input_shutdown(void);
 void input_update(f64 delta_time);
 
 // Keys

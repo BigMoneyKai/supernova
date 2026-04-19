@@ -12,12 +12,21 @@
 #define LOG_TRACE_ENABLED 0
 #endif
 
+#if SN_PLATFORM_WINDOWS == 1
+#define RESET       ""
+#define GREEN       ""
+#define RED         ""
+#define DARK_RED    ""
+#define LIGHT_BLUE  ""
+#define MAGENTA     ""
+#else
 #define RESET       "\033[0m"
 #define GREEN       "\033[32m"
 #define RED         "\033[31m"
 #define DARK_RED    "\033[1;31m"
 #define LIGHT_BLUE  "\033[94m"
 #define MAGENTA     "\033[35m"
+#endif
 
 typedef enum log_level {
     LOG_LEVEL_FATAL = 0,
@@ -59,41 +68,58 @@ typedef enum log_process_type {
     EXCEPT_MAX_NUM
 } log_process_type;
 
-b8 init_logging();
-void quit_logging();
-
+b8 init_logging(void);
+void quit_logging(void);
 void log_output(log_level level, const char* file_path, i32 line, const char* msg, ...);
 
 // fatal
-#define FATAL(msg, ...) log_output(LOG_LEVEL_FATAL, __FILE__, __LINE__, msg, ##__VA_ARGS__);
+#define FATAL(msg, ...)\
+    do {\
+        log_output(LOG_LEVEL_FATAL, __FILE__, __LINE__, msg __VA_OPT__(,) __VA_ARGS__);\
+    } while(0)
 
 // error
-#define ERROR(msg, ...) log_output(LOG_LEVEL_ERROR, __FILE__, __LINE__, msg, ##__VA_ARGS__);
+#define ERROR(msg, ...)\
+    do {\
+        log_output(LOG_LEVEL_ERROR, __FILE__, __LINE__, msg __VA_OPT__(,) __VA_ARGS__);\
+    } while(0)
 
 // warning
 #if LOG_WARN_ENABLED == 1
-#define WARN(msg, ...)  log_output(LOG_LEVEL_WARN, __FILE__, __LINE__, msg, ##__VA_ARGS__);
+#define WARN(msg, ...)\
+    do {\
+        log_output(LOG_LEVEL_WARN, __FILE__, __LINE__, msg __VA_OPT__(,) __VA_ARGS__);\
+    } while(0)
 #else
-#define WARN(msg, ...)
+#define WARN(msg, ...) (void(0))
 #endif
 
 // info
 #if LOG_INFO_ENABLED == 1
-#define INFO(msg, ...)  log_output(LOG_LEVEL_INFO, __FILE__, __LINE__, msg, ##__VA_ARGS__);
+#define INFO(msg, ...)\
+    do {\
+        log_output(LOG_LEVEL_INFO, __FILE__, __LINE__, msg __VA_OPT__(,) __VA_ARGS__);\
+    } while(0)
 #else
-#define INFO(msg, ...)
+#define INFO(msg, ...) (void(0))
 #endif
 
 // debug
 #if LOG_DEBUG_ENABLED == 1
-#define DEBUG(msg, ...)  log_output(LOG_LEVEL_DEBUG, __FILE__, __LINE__, msg, ##__VA_ARGS__);
+#define DEBUG(msg, ...)\
+    do {\
+        log_output(LOG_LEVEL_DEBUG, __FILE__, __LINE__, msg __VA_OPT__(,) __VA_ARGS__);\
+    } while(0)
 #else
-#define DEBUG(msg, ...)
+#define DEBUG(msg, ...) (void(0))
 #endif
 
 // trace
 #if LOG_TRACE_ENABLED == 1
-#define TRACE(msg, ...)  log_output(LOG_LEVEL_TRACE, __FILE__, __LINE__, msg, ##__VA_ARGS__);
+#define TRACE(msg, ...)\
+    do {\
+        log_output(LOG_LEVEL_TRACE, __FILE__, __LINE__, msg __VA_OPT__(,) __VA_ARGS__);\
+    } while(0)
 #else
-#define TRACE(msg, ...)
+#define TRACE(msg, ...) (void(0))
 #endif

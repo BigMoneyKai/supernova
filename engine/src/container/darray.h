@@ -38,6 +38,8 @@ SNAPI log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest);
             case CORRECT: {\
                 TRACE("darray created");\
             } break;\
+            default:\
+                break;\
         }\
     } while(0)
 
@@ -51,6 +53,8 @@ SNAPI log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest);
             case CORRECT: {\
                 TRACE("darray destroyed");\
             } break;\
+            default:\
+                break;\
         }\
     } while(0)
 
@@ -67,12 +71,14 @@ SNAPI log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest);
             case CORRECT: {\
                 TRACE("darray resized");\
             } break;\
+            default:\
+                break;\
         }\
     } while(0)
 
 #define darray_push(darr, val)\
     do {\
-        typeof(val) temp = val;\
+        auto temp = val;\
         log_process_type res = _darray_push((darr), (&temp));\
         switch(res) {\
             case NULL_PTR: {\
@@ -84,12 +90,14 @@ SNAPI log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest);
             case CORRECT: {\
                 TRACE("darray pushed '%s' back", #val);\
             } break;\
+            default:\
+                break;\
         }\
     } while(0)
 
 #define darray_insert(darr, idx, val)\
     do {\
-        typeof(val) temp = val;\
+        auto temp = val;\
         log_process_type res = _darray_insert((darr), (idx), (&temp));\
         switch(res) {\
             case NULL_PTR: {\
@@ -104,6 +112,8 @@ SNAPI log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest);
             case CORRECT: {\
                 TRACE("darray inserted '%s' at %lu", #val, idx);\
             } break;\
+            default:\
+                break;\
         }\
     } while(0)
 
@@ -117,6 +127,8 @@ SNAPI log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest);
             case CORRECT: {\
                 TRACE("darray popped back to '%s'", #dest);\
             } break;\
+            default:\
+                break;\
         }\
     } while(0)
 
@@ -133,5 +145,7 @@ SNAPI log_process_type _darray_pop_at(darray* arr, u64 idx, void* dest);
             case CORRECT: {\
                 TRACE("darray popped at %lu to '%s'", idx, #dest);\
             } break;\
+            default:\
+                break;\
         }\
     } while(0)

@@ -4,6 +4,7 @@
 #include "core/memory.h"
 #include "core/event.h"
 #include "core/input.h"
+#include "core/clock.h"
 
 typedef struct app_state {
     b8 is_running;
@@ -11,6 +12,7 @@ typedef struct app_state {
     platform_state platform;
     i16 width;
     i16 height;
+    clock clock;
     f64 last_time;
 
 } app_state;
@@ -51,7 +53,11 @@ b8 app_create(app_config* config) {
     return SN_TRUE;
 }
 
-b8 app_run() {
+b8 app_run(void) {
+    clock_start(&app.clock);
+    clock_update(&app.clock);
+    app.last_time = app.clock.elapsed;
+
     while(app.is_running) {
         f64 current = platform_get_absolute_time();
         f64 delta = current - app.last_time;
@@ -67,6 +73,7 @@ b8 app_run() {
 
     app.is_running = SN_FALSE;
 
+    clock_shutdown(&app.clock);
     platform_shutdown(&app.platform);
     input_shutdown();
     return SN_TRUE;

@@ -11,7 +11,7 @@ void report_assertion_message(const char* file_path, i32 line, const char* msg, 
     do {                        \
         if(cond) {              \
         } else {                \
-            const char* assert_msg = "Assertion failed: ("#cond")"msg;          \
+            const char* assert_msg = "Assertion failed: ("#cond")" msg;          \
             report_assertion_message(__FILE__, __LINE__, assert_msg, ##__VA_ARGS__);\
             debug_break();      \
         }                       \

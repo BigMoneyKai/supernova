@@ -104,7 +104,7 @@ static key_code xkb_keysym_to_key_code(xkb_keysym_t sym) {
         case XKB_KEY_Control_L: return KEY_CODE_LCTRL;
         case XKB_KEY_Control_R: return KEY_CODE_RCTRL;
 
-        default: return 0;
+        default: return KEY_CODE_UNKNOWN;
     }
 }
 
@@ -114,7 +114,7 @@ static mouse_code xcb_button_to_mouse_code(u8 button) {
         case 3: return MOUSE_CODE_2; // right
         case 2: return MOUSE_CODE_3; // middle
         case 8: return MOUSE_CODE_4; // back/extra
-        default: return 0;
+        default: return MOUSE_CODE_UNKNOWN;
     }
 }
 
@@ -219,11 +219,11 @@ b8 platform_startup(
     xcb_flush(state->connection);
 
     state->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    struct xkb_rule_names names{};
     if(!state->xkb_context) {
         ERROR("Failed to create XKB context.");
         goto xkb_fail;
     }
-    struct xkb_rule_names names = {0};
     state->xkb_keymap = xkb_keymap_new_from_names(state->xkb_context, &names,
                                                   XKB_KEYMAP_COMPILE_NO_FLAGS);
     if(!state->xkb_keymap) {
@@ -297,7 +297,7 @@ b8 platform_pump_messages(platform_state* plat_state) {
                     (xcb_client_message_event_t*)event;
 
                 if (cm->type == state->wm_protocols && cm->data.data32[0] == state->wm_delete_win) {
-                    event_context ctx = {0};
+                    event_context ctx{};
                     event_fire(EVENT_CODE_APP_QUIT, NULL, ctx);
                     if(state->callbacks.on_quit) {
                         state->callbacks.on_quit(state->callbacks.user_data);
@@ -312,7 +312,7 @@ b8 platform_pump_messages(platform_state* plat_state) {
                 xkb_state_update_key(state->xkb_state, kp->detail, XKB_KEY_DOWN);
                 xkb_keysym_t sym = xkb_state_key_get_one_sym(state->xkb_state, kp->detail);
                 key_code key = xkb_keysym_to_key_code(sym);
-                event_context ctx = {0};
+                event_context ctx{};
                 ctx.data.u16v[0] = (u16)key;
                 event_fire(EVENT_CODE_KEY_PRESSED, NULL, ctx);
                 if (state->callbacks.on_key)
@@ -324,7 +324,7 @@ b8 platform_pump_messages(platform_state* plat_state) {
                 xkb_keysym_t sym = xkb_state_key_get_one_sym(state->xkb_state, kr->detail);
                 key_code key = xkb_keysym_to_key_code(sym);
                 xkb_state_update_key(state->xkb_state, kr->detail, XKB_KEY_UP);
-                event_context ctx = {0};
+                event_context ctx{};
                 ctx.data.u16v[0] = (u16)key;
                 event_fire(EVENT_CODE_KEY_RELEASED, NULL, ctx);
                 if (state->callbacks.on_key)
@@ -334,14 +334,14 @@ b8 platform_pump_messages(platform_state* plat_state) {
             case XCB_BUTTON_PRESS: {
                 xcb_button_press_event_t* bp = (xcb_button_press_event_t*)event;
                 if (bp->detail == 4 || bp->detail == 5) {
-                    event_context ctx = {0};
+                    event_context ctx{};
                     ctx.data.i8v[0] = (bp->detail == 4) ? 1 : -1;
                     event_fire(EVENT_CODE_MOUSE_SCROLLED, NULL, ctx);
                     if (state->callbacks.on_scroll)
                         state->callbacks.on_scroll(ctx.data.i8v[0], state->callbacks.user_data);
                 } else {
                     mouse_code btn = xcb_button_to_mouse_code(bp->detail);
-                    event_context ctx = {0};
+                    event_context ctx{};
                     ctx.data.u16v[0] = (u16)btn;
                     event_fire(EVENT_CODE_BUTTON_PRESSED, NULL, ctx);
                     if (state->callbacks.on_button)
@@ -355,7 +355,7 @@ b8 platform_pump_messages(platform_state* plat_state) {
                     break;
                 }
                 mouse_code btn = xcb_button_to_mouse_code(br->detail);
-                event_context ctx = {0};
+                event_context ctx{};
                 ctx.data.u16v[0] = (u16)btn;
                 event_fire(EVENT_CODE_BUTTON_RELEASE, NULL, ctx);
                 if (state->callbacks.on_button)
@@ -364,7 +364,7 @@ b8 platform_pump_messages(platform_state* plat_state) {
 
             case XCB_MOTION_NOTIFY: {
                 xcb_motion_notify_event_t* mn = (xcb_motion_notify_event_t*)event;
-                event_context ctx = {0};
+                event_context ctx{};
                 ctx.data.i16v[0] = (i16)mn->event_x;
                 ctx.data.i16v[1] = (i16)mn->event_y;
                 event_fire(EVENT_CODE_MOUSE_MOVE, NULL, ctx);
@@ -375,7 +375,7 @@ b8 platform_pump_messages(platform_state* plat_state) {
 
             case XCB_CONFIGURE_NOTIFY: {
                 xcb_configure_notify_event_t* cn = (xcb_configure_notify_event_t*)event;
-                event_context ctx = {0};
+                event_context ctx{};
                 ctx.data.u16v[0] = cn->width;
                 ctx.data.u16v[1] = cn->height;
                 event_fire(EVENT_CODE_WINDOW_RESIZED, NULL, ctx);

@@ -83,7 +83,7 @@ void pool_free(pool_allocator* pool, void* block) {
         return;
     }
 
-    free_block* fb = block;
+    free_block* fb = reinterpret_cast<free_block*>(block);
     fb->next = pool->free_list;
     fb->tag = MEM_TAG_UNKNOWN;
     pool->free_list = fb;

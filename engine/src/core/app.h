@@ -8,8 +8,8 @@ typedef struct app_config {
     i16 start_width;
     i16 start_height;
 
-    char* name;
+    const char* name;
 } app_config;
 
 SNAPI b8 app_create(app_config* config);
-SNAPI b8 app_run();
+SNAPI b8 app_run(void);

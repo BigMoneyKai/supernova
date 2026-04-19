@@ -23,7 +23,7 @@ typedef struct input_state {
 } input_state;
 
 static b8 is_inited = SN_FALSE;
-static input_state input = {0};
+static input_state input{};
 
 static b8 input_on_event(u16 code, void* sender, void* listener, const event_context* data) {
     (void)sender;

@@ -54,9 +54,9 @@ typedef enum event_code {
 
 typedef b8 (*sys_event)(u16 code, void* sender, void* listener_inst, const event_context* data);
 
-SNAPI b8 event_init();
+SNAPI b8 event_init(void);
 SNAPI b8 event_register(u16 code, void* listener, sys_event event);
 SNAPI b8 event_unregister(u16 code, void* listener, sys_event event);
 SNAPI b8 event_fire(u16 code, void* sender, event_context context);
 
-SNAPI void print_event_msg();
+SNAPI void print_event_msg(void);
