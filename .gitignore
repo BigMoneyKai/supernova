@@ -40,5 +40,8 @@
 # debug information files
 *.dwo
 
+.codex
+.cache
+
 /bin
 /build
