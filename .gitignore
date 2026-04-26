@@ -39,9 +39,8 @@
 
 # debug information files
 *.dwo
-
 .codex
-.cache
 
+/.cache
 /bin
 /build
