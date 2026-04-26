@@ -24,9 +24,9 @@ target_compile_definitions(engine PRIVATE
     SNEXPORT
 )
 
-target_link_libraries(engine PRIVATE
-    Vulkan::Vulkan
-    xcb
-    X11-xcb
-    xkbcommon
-)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(engine PRIVATE
+        xcb
+        xkbcommon
+    )
+endif()

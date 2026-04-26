@@ -1,3 +1,5 @@
 function(packages_setup)
-    find_package(Vulkan REQUIRED)
+    add_subdirectory(thirdparty/glfw)
+    add_subdirectory(thirdparty/glm)
+    add_subdirectory(thirdparty/volk)
 endfunction()
